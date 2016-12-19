@@ -51,6 +51,8 @@ int main(void) {
     source1.setOutputParameters(s1);
     s1.setOutputParameters(p1);
     
+    // This could be contained in a list so that each step could 
+    // be executed in a 'for' loop
     source1.execute();
     s1.execute();
     p1.execute();
