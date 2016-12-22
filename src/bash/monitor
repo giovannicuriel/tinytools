@@ -1,0 +1,11 @@
+#!/bin/sh
+p=( $@ )
+len=${#p[@]}
+cmd=${p[@]:0:$len}
+$cmd
+result=$?
+if [ $result == 0 ]; then
+	notify-send "Command $1 executed successfully."
+else
+	notify-send "Command $1 failed."
+fi
