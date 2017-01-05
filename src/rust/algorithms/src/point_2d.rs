@@ -13,5 +13,9 @@ impl Point2D {
     pub fn r(&self) -> f32 {
         (self.x.powf(2.0) + self.y.powf(2.0)).sqrt()
     }
+    
+    pub fn theta(&self) -> f32 {
+        (
+    }
 }
 
