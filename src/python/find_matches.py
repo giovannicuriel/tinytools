@@ -1,4 +1,4 @@
-#!python3
+#!/usr/local/bin/python3
 """
 This simple script finds which files are exact match.
 """
@@ -9,6 +9,8 @@ import os
 def fill_md5(content, md5):
     for currline in content:
         currtokens = currline.split("= ")
+        if (len(currtokens) != 2):
+            continue
         currmd5 = currtokens[1].strip()
         # Removes 'MD5 (' and last parenthesis.
         currfile = currtokens[0].strip()[5:-1]
