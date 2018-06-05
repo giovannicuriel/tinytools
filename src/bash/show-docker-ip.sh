@@ -1,6 +1,6 @@
 
 
-default_network="deploy_default"
+default_network="$1"
 docker_containers=$(docker ps  --format '{{.Names}}')
 
 echo 
