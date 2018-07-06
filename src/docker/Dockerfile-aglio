@@ -3,13 +3,9 @@ RUN apk update && apk add gcc g++ musl-dev make python
 USER node
 RUN mkdir ~/.npm-global
 RUN npm config set prefix '~/.npm-global'
-#RUN echo export PATH=~/.npm-global/bin:$PATH >> ~/.profile
-#RUN source ~/.profile
 RUN npm install -g aglio
 
 FROM node:8-alpine
 USER node
 COPY --from=basis /home/node/.npm-global /home/node/.npm-global
-#RUN echo export PATH=~/.npm-global/bin:$PATH >> ~/.profile
-#RUN source ~/.profile
 ENTRYPOINT ["/home/node/.npm-global/bin/aglio"]
