@@ -1,0 +1,5 @@
+script:
+  - ./src/docker/super-service.sh
+  - 'docker build -t ${TRAVIS_REPO_SLUG} . -f ./src/docker/Dockerfile'
+after_success:
+  - src/docker/publish.sh
