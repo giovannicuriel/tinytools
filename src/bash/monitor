@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 p=( $@ )
 len=${#p[@]}
 cmd=${p[@]:0:$len}
