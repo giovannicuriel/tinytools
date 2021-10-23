@@ -46,10 +46,10 @@ struct FirstOrderFunction {
         return a + m * x;
     }
     bool isAbove(const Point & p) const {
-        return f(p.x) > p.y;
+        return f(p.x) >= p.y;
     }
     bool isBelow(const Point & p) const {
-        return !isAbove(p);
+        return f(p.x) <= p.y;
     }
 };
 
@@ -127,6 +127,8 @@ int main(void) {
     );
     std::list<Point> points = {
         { 0, 0 },
+        { 11, 3 },
+        { 2, 6 },
         { 2, 0 },
         { 5, 0 },
         { 13, 0 },
