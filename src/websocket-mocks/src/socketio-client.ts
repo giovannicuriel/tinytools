@@ -1,10 +1,10 @@
-import * as sio from "socket.io-client";
+import { io, Socket } from "socket.io-client";
 import { Client } from "./client";
 import { logger } from "./logger";
 
 class SocketIoClient extends Client {
 
-    private socketIo: SocketIOClient.Socket;
+    private socketIo: Socket;
 
   /**
    * Constructor
@@ -14,13 +14,12 @@ class SocketIoClient extends Client {
   constructor(server: string, autoReconnectInterval: number, token: string) {
     super(server, autoReconnectInterval);
     logger.debug(`Creating connection to server: ${this.server}, using token ${token}`);
-    const query: SocketIOClient.ConnectOpts = {
+    this.socketIo = io(this.server, {
         query: {
             token,
         },
         transports: ["polling"],
-    };
-    this.socketIo = sio(this.server, query);
+    });
     logger.debug(`SocketIO was created.`);
   }
 

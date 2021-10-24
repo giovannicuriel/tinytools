@@ -9,11 +9,11 @@ import { SocketIoClient } from "./socketio-client";
 import { WebSocketClient } from "./websocket-client";
 
 const parser = new ArgumentParser();
-parser.addArgument(["-s", "--server"]);
-parser.addArgument(["-c", "--client"]);
-parser.addArgument(["-t", "--token"]);
+parser.add_argument("-s", "--server");
+parser.add_argument("-c", "--client");
+parser.add_argument("-t", "--token");
 
-const args = parser.parseArgs();
+const args = parser.parse_args();
 
 logger.debug(`Using server: ${args.server}`);
 logger.debug(`Using client: ${args.client}`);
