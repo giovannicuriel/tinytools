@@ -1,7 +1,10 @@
 import { ArgumentParser } from "argparse";
+import fs = require('fs');
 import util = require("util");
 import { Client } from "./client";
 import { logger } from "./logger";
+import { Message } from "./message";
+import { ResultFile } from "./resultfile";
 import { SocketIoClient } from "./socketio-client";
 import { WebSocketClient } from "./websocket-client";
 
@@ -30,7 +33,27 @@ switch (args.client) {
     logger.info("Supported types are 'socketio' or 'websocket'");
     process.exit(-1);
 }
+
 client.onMessage((data: any) => {
   logger.debug(`Message received: ${util.inspect(data)}`);
+
+  let file = ResultFile.instance;
+  let message = Message.instance(data);
+
+  fs.appendFile(file.path, message.content, err => {
+
+    if (err) logger.debug(`Error writing message: ${util.inspect(data)}`);
+
+    if (message.last){
+
+      logger.debug(`Last message: ${util.inspect(data)}`);
+
+      fs.rename(file.path, file.newPath, (err) => {
+        if(err) console.log('Error: ' + err);
+      })
+
+    }
+  });
 });
+
 client.start();
