@@ -11,6 +11,19 @@
 #include <iostream>
 #include <list>
 
+struct Logger {
+    bool isEnabled;
+    template<typename T>
+    Logger & operator<<(const T &obj) {
+        if (isEnabled) {
+            std::cout << obj;
+        }
+        return *this;
+    }
+};
+
+Logger logger({true});
+
 bool isEven(u_int32_t n) { return n % 2 == 1;}
 
 struct Point {
@@ -22,35 +35,64 @@ struct Point {
 };
 
 enum ProjectionSide {
+    NO_PROJECTION,
     TO_THE_LEFT,
-    TO_THE_RIGHT,
-    NO_PROJECTION
+    TO_THE_RIGHT
 };
 
 struct Edge {
     Point p1;
     Point p2;
-    bool isWithinYRange(const Point & p) const {
-        return (p.y >= p1.y && p.y <= p2.y) || (p.y <= p1.y && p.y >= p2.y);
+    bool isWithinRange(const Point & p) const {
+        return ((p.x >= p1.x && p.x <= p2.x) || ( p.x >= p2.x && p.x <= p1.x)) &&
+        ((p.y >= p1.y && p.y <= p2.y) || (p.y >= p2.y && p.y <= p1.y));
     }
+
+    bool isWithinXRange(const Point & p) const {
+        return (p.x > p1.x && p.x <= p2.x) ||( p.x > p2.x && p.x <= p1.x);
+    }
+
+    bool isWithinYRange(const Point & p) const {
+        return (p.y > p1.y && p.y <= p2.y) || (p.y > p2.y && p.y <= p1.y);
+    }
+};
+std::ostream & operator<<(std::ostream & os, const Point & p) {
+    os << "(" << p.x << ", " << p.y << ")";
+    return os;
+}
+
+std::ostream & operator<<(std::ostream & os, const Edge & e) {
+    os << "Edge: " << e.p1 << " - " << e.p2;
+    return os;
 };
 
 struct FirstOrderFunction {
     double m;
     double a;
+    bool isVertical;
     FirstOrderFunction(const Edge & e) {
-        m = (e.p2.y - e.p1.y) / double (e.p2.x - e.p1.x);
-        a =  e.p1.y - m * e.p1.x;
+        isVertical = e.p1.x == e.p2.x;
+        if (!isVertical) {
+            m = (e.p2.y - e.p1.y) / double (e.p2.x - e.p1.x);
+            a =  e.p1.y - m * e.p1.x;
+        } else {
+            m = 0;
+            a = e.p1.x;
+        }
     }
     double f(int x) const {
         return a + m * x;
     }
-    bool isAbove(const Point & p) const {
-        return f(p.x) >= p.y;
+    bool isToTheLeft(const Point & p) const {
+        return (isVertical ? p.x > a : m > 0 ? f(p.x) > p.y : f(p.x) < p.y);
     }
-    bool isBelow(const Point & p) const {
-        return f(p.x) <= p.y;
+    bool isToTheRight(const Point & p) const {
+        return (isVertical ? p.x < a : m > 0 ? f(p.x) < p.y : f(p.x) > p.y);
     }
+    bool contains(const Point & p) const {
+        return (isVertical ? (a == p.x ): f(p.x) == p.y);
+    }
+
 };
 
 struct Vertex : public Point {
@@ -64,11 +106,16 @@ bool hasProjectionOnEdge(const Point & point, const Edge & edge, ProjectionSide 
         case NO_PROJECTION:
             return !edge.isWithinYRange(point);
         case TO_THE_LEFT:
-            return edge.isWithinYRange(point) && edgeFunction.isAbove(point);
+            return edge.isWithinYRange(point) && edgeFunction.isToTheLeft(point);
         case TO_THE_RIGHT:
-            return edge.isWithinYRange(point) && edgeFunction.isBelow(point);
+            return edge.isWithinYRange(point) && edgeFunction.isToTheRight(point);
     }
     return false;
+}
+
+bool isOnEdge(const Point & point, const Edge & edge) {
+    FirstOrderFunction edgeFunction(edge);
+    return (edge.p1 == point || edge.p2 == point || (edge.isWithinRange(point) && edgeFunction.contains(point)));
 }
 
 struct Polygon {
@@ -98,7 +145,12 @@ struct Polygon {
     bool contains(const Point & point) const {
         u_int32_t cross = 0;
         for (auto & edge: edges) {
-            if (hasProjectionOnEdge(point, edge, TO_THE_LEFT)) {
+            if (isOnEdge(point, edge)) {
+                // Point is on the edge, no need to keep checking
+                return true;
+            }
+            auto state = hasProjectionOnEdge(point, edge, TO_THE_LEFT);
+            if (state) {
                 cross++;
             }
         }
@@ -106,58 +158,35 @@ struct Polygon {
     }
 };
 
-std::ostream & operator<<(std::ostream & os, const Point & p) {
-    os << "(" << p.x << ", " << p.y << ")";
-    return os;
-}
-
-std::ostream & operator<<(std::ostream & os, const Edge & e) {
-    os << "Edge: " << e.p1 << " - " << e.p2;
-    return os;
-};
 
 int main(void) {
+    logger.isEnabled = false;
     Polygon polygon = Polygon (
         {
-            {1, 1},
-            {11, 3},
-            {14, 14},
-            {3, 11}
+            {10, 4},
+            {20, 20},
+            {5, 25},
+            {20, 26},
+            {20, 37},
+            {25, 27},
+            {37, 25},
+            {10, 15},
+            {30, 4}
         }
     );
-    std::list<Point> points = {
-        { 0, 0 },
-        { 11, 3 },
-        { 2, 6 },
-        { 2, 0 },
-        { 5, 0 },
-        { 13, 0 },
-        { 15, 0 },
-        { 0,  2 },
-        { 2,  2 },
-        { 5,  2 },
-        { 10, 2 },
-        { 13, 2 },
-        { 15, 2 },
-        { 0,  5 },
-        { 2,  5 },
-        { 5,  5 },
-        { 13, 5 },
-        { 15, 5 },
-        { 0,  13 },
-        { 2,  13 },
-        { 5,  13 },
-        { 13, 13 },
-        { 15, 13 },
-        { 0,  15 },
-        { 2,  15 },
-        { 5,  15 },
-        { 13, 15 },
-        { 15, 15 },
-    };
-    for (auto & point: points) {
-        auto state = (polygon.contains(point) ? "" : "not ");
-        std::cout << "Point " << point << " is " << state << "inside the polygon" << std::endl;
+    for (int y = 0; y < 50; y++) {
+        std::cout << ">";
+        for (int x = 0; x < 50; x++) {
+            if (polygon.contains({x, y})) {
+                std::cout << "*";
+            } else {
+                std::cout << " ";
+            }
+        }
+        std::cout << "<" << std::endl;
     }
+    // Point probe({10, 31});
+    // auto result = polygon.contains(probe);
+    // std::cout << "Point " << probe << " is " << (result ? "" : "not ") << "inside the polygon" << std::endl;
     return 0;
 }
