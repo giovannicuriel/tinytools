@@ -1,6 +1,6 @@
 /**
  * @file test-template-1.cpp
- * @author Giovanni Curiel (giovannicuriel@gmail.com)
+ * @author Giovanni Curiel
  * @brief Test for template
  * @version 0.1
  * @date 2021-10-23
