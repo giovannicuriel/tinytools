@@ -1,4 +1,5 @@
-sample-1.app: test-template-2.o
+all: test-1.app test-2.app
+test-%.app: test-%.o
 	$(CXX) $^ -o $@
 clean:
 	rm -fr *.app *.o
