@@ -7,7 +7,7 @@ class PatriciaTree {
 
     private fun findLongestMatchingIndex(s1: String, s2: String): Int = s1.commonPrefixWith(s2).length
 
-    fun findNode(subKey: String, currNode: Node, relaxed: Boolean = false): Node? {
+    private fun findNode(subKey: String, currNode: Node, relaxed: Boolean = false): Node? {
         return findLongestMatchingIndex(subKey, currNode.key).let { matchingIndex ->
             when  {
                 // Could be currNode itself or one of its children
@@ -15,7 +15,6 @@ class PatriciaTree {
                     findNode(subKey.substring(matchingIndex), it, relaxed)
                 } ?: currNode
                 // Incomplete key - no such key was found
-                matchingIndex == subKey.length -> if (relaxed) currNode else null
                 matchingIndex > 0 -> if (relaxed) currNode else null
                 else -> null
             }
@@ -24,7 +23,7 @@ class PatriciaTree {
 
     fun findNode(key: String, relaxed: Boolean = false) = rootNode.children.firstNotNullOfOrNull { findNode(key, it, relaxed) }
 
-    fun splitNode(node: Node, newIndex: Int) = node.apply {
+    private fun splitNode(node: Node, newIndex: Int) = node.apply {
         val nodeChildren = mutableListOf<Node>().apply { addAll(children) }
         children.clear()
         children.addAll(
