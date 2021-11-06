@@ -120,10 +120,15 @@ fun main() {
     pt.insertNode("get client address", 12.0)
     pt.insertNode("get movies", 13.0)
     pt.insertNode("set movie title", 14.0)
+    pt.insertNode("set movie thumbnail", 14.0)
+    pt.insertNode("set movie thumbnail", 14.0)
+    pt.insertNode("set movie actor", 14.0)
+    pt.insertNode("set movie price", 14.0)
     pt.insertNode("set movie length", 15.0)
+    pt.insertNode("set movie limbo", 15.0)
     pt.insertNode("help", 16.0)
     pt.rootNode.print("")
-        pt.findNode("set movie l", true)?.let {
+        pt.findNode("set movie li", true)?.let {
         println("[pt] Found node ${it.key}")
     }
 }

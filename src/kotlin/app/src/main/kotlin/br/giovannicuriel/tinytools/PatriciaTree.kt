@@ -7,9 +7,9 @@ class PatriciaTree {
     private fun findLongestMatchingIndex(s1: String, s2: String): Int = s1.commonPrefixWith(s2).length
 
     private fun findInChildren(currNode: Node, subKey: String, relaxed: Boolean) =
-        currNode.children[subKey[0]]?.let {
-            findNode(subKey, currNode, relaxed)
-        }
+        if (subKey.length > 0) currNode.children[subKey[0]]?.let {
+            findNode(subKey, it, relaxed)
+        } else null
 
     private fun findNode(subKey: String, currNode: Node, relaxed: Boolean = false): Node? {
         return findLongestMatchingIndex(subKey, currNode.key).let { matchingIndex ->
@@ -43,6 +43,10 @@ class PatriciaTree {
         (findNode(key, true) ?: rootNode).let { currNode ->
             val subKey = key.substring(currNode.index)
             val matchingIndex = findLongestMatchingIndex(currNode.key, subKey)
+            if (currNode.index + matchingIndex == key.length) {
+                // key already exists
+                return
+            }
             val newNode = Node(
                 key.substring(currNode.index + matchingIndex, key.length),
                 data,
