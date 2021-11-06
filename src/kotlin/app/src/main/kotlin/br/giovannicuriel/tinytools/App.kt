@@ -6,11 +6,18 @@ package br.giovannicuriel.tinytools
 
 
 class Node(
-    val key: String,
+    var key: String,
     val data: Double,
-    val children: MutableList<Node>
+    val children: MutableList<Node>,
+    val index: Int = 0
 ) {
 
+    fun print(preamble: String = "") {
+        println("$preamble$key:")
+        children.forEach {
+            it.print("$preamble  ")
+        }
+    }
 }
 
 val getTree = Node(
@@ -21,6 +28,22 @@ val getTree = Node(
             "clients",
             2.0,
             mutableListOf<Node>()
+        ),
+        Node(
+            "client",
+            2.0,
+            mutableListOf<Node>(
+                Node(
+                    "data",
+                    1.9,
+                    mutableListOf()
+                ),
+                Node(
+                    "rentals",
+                    1.9,
+                    mutableListOf()
+                )
+            )
         ),
         Node(
             "movies",
@@ -35,45 +58,112 @@ val helpTree = Node(
     mutableListOf()
 )
 
-class PatriciaTree {
+class SimpleCommandTree {
 
     val rootNode = Node("^", 0.0, mutableListOf(
         getTree,
         helpTree
     ))
 
-    fun getRemainderKey(commandKey: String, testedKey: String) = testedKey.substring(testedKey.commonPrefixWith(commandKey).length).trimStart().trimEnd()
+    fun isMatchingKey(str: String, key: String) = key[0] == str[0]
 
-    fun findNode(key: String, currNode: Node): Triple<Node, Boolean, String>?  =
-        if (currNode.key.compareTo(key) == 0) {
-            Triple(currNode, true, "")
-        } else if (currNode.children.isEmpty()) {
-            if (currNode.key.commonPrefixWith(key).length != 0) {
-                val subKey = getRemainderKey(currNode.key, key)
-                println("Subkey: >$subKey<, curr key >${currNode.key}<, key >${key}<")
-                Triple(currNode, false, subKey)
-            } else {
-                null;
-            }
-        } else {
-            if (key[0] == currNode.key[0]) {
-                val subKey = getRemainderKey(currNode.key, key)
-
-                currNode.children.firstNotNullOfOrNull {
-                    findNode(subKey, it)
-                } ?: Triple(currNode, false, subKey)
-            } else {
-                null
+    private fun findLongestMatchingIndex(s1: String, s2: String): Int {
+        val comparison = { s: String -> { ix: Int, acc: Int, curr: Char -> if (curr == s[ix] && (acc == ix)) acc + 1 else acc } }
+        return s1.compareTo(s2).let {
+            when {
+                it > 0 -> s2.foldIndexed(0, comparison(s1))
+                it <= 0 -> s1.foldIndexed(0, comparison(s2))
+                else -> s1.foldIndexed(0, comparison(s2))
             }
         }
-
-    fun findNode(key: String): Triple<Node, Boolean, String>? = rootNode.children.firstNotNullOfOrNull { findNode(key, it) }
-
-    fun insertNode(key: String, data: Double) {
-        val (node, isFound, subKey) = findNode(key) ?: Triple(rootNode, false, key)
-        println("Current node is: ${node.key}, sub key is: >${subKey}<")
     }
 
+    fun findNode(key: String, index: Int = 0, currNode: Node): List<Node> {
+        val subKey = key.substring(index).trimStart().trimEnd()
+        return if (isMatchingKey(subKey, currNode.key)) {
+            if (subKey.compareTo(currNode.key) == 0) { return listOf(currNode) }
+            val matchingIndex = findLongestMatchingIndex(subKey, currNode.key)
+            when (matchingIndex) {
+                currNode.key.length -> currNode.children.map {
+                        findNode(key, index + matchingIndex, it)
+                    }.fold(emptyList()) {
+                        acc, curr -> acc + curr
+                    }
+                subKey.length -> listOf(currNode)
+                else -> emptyList()
+            }
+        } else {
+            emptyList()
+        }
+    }
+
+    fun findNode(key: String) = rootNode.children.firstNotNullOfOrNull { findNode(key, 0, it) }
+
+}
+
+
+class PatriciaTree {
+
+    val rootNode = Node("^", 0.0, mutableListOf(), 0)
+
+    fun isMatchingKey(str: String, key: String) = key[0] == str[0]
+
+    private fun findLongestMatchingIndex(s1: String, s2: String): Int {
+        val comparison = { s: String -> { ix: Int, acc: Int, curr: Char -> if (curr == s[ix] && (acc == ix)) acc + 1 else acc } }
+        return when {
+            s1.length - s2.length > 0 -> s2.foldIndexed(0, comparison(s1))
+            s1.length - s2.length <= 0 -> s1.foldIndexed(0, comparison(s2))
+            else -> s1.foldIndexed(0, comparison(s2))
+        }
+    }
+
+    fun findNode(key: String, index: Int = 0, currNode: Node, relaxed: Boolean = false): Node? {
+        val subKey = key.substring(index).trimStart().trimEnd()
+        return if (isMatchingKey(subKey, currNode.key)) {
+            if (subKey.compareTo(currNode.key) == 0) { return currNode }
+            val matchingIndex = findLongestMatchingIndex(subKey, currNode.key)
+            when (matchingIndex) {
+                currNode.key.length -> currNode.children.firstNotNullOfOrNull { findNode(key, index + matchingIndex, it) } ?: currNode
+                subKey.length -> if (relaxed) currNode else null
+                else -> if (relaxed) currNode else null
+            }
+        } else {
+            null
+        }
+    }
+    fun findNode(key: String, relaxed: Boolean = false) = rootNode.children.firstNotNullOfOrNull { findNode(key, 0, it, relaxed) }
+
+    fun splitNode(node: Node, index: Int) = Node(
+        node.key.substring(0, index),
+        node.data,
+        mutableListOf(
+            Node(
+                node.key.substring(index, node.key.length),
+                node.data,
+                mutableListOf<Node>().also { it.addAll(node.children) },
+                node.index + index
+            )
+        ),
+        node.index
+    )
+    fun insertNode(key: String, data: Double) {
+        (findNode(key, true) ?: rootNode).let {
+            val subKey = key.substring(it.index)
+            val matchingIndex = findLongestMatchingIndex(it.key, subKey)
+            var splitted = if (matchingIndex != 0 && matchingIndex != it.key.length) splitNode(it, matchingIndex) else it
+            splitted.children.add(Node(
+                key.substring(matchingIndex),
+                data,
+                mutableListOf(),
+                it.index + matchingIndex
+            ))
+            if (matchingIndex != 0 && matchingIndex != it.key.length) {
+                it.children.clear()
+                it.children.addAll(splitted.children)
+                it.key = splitted.key
+            }
+        }
+    }
 }
 
 class App {
@@ -85,9 +175,25 @@ class App {
 
 fun main() {
     println(App().greeting)
+    val sp = SimpleCommandTree()
     val pt = PatriciaTree()
 
-//    pt.findNode("get xtudo")?.let { (node, found) -> print("node ${node.key} was found? ${found}") }
+//    sp.findNode("get client")?.let {
+//        it.forEach { println("Found node ${it.key}") }
+//    }
 
-    pt.insertNode("get client data", 10.9)
+
+    pt.insertNode("get clients", 10.0)
+    pt.insertNode("get client data", 10.0)
+    pt.insertNode("get client address", 10.0)
+    pt.insertNode("get movies", 10.0)
+    pt.insertNode("set movie title", 10.0)
+    pt.insertNode("set movie length", 10.0)
+    pt.insertNode("help", 10.0)
+    pt.rootNode.print("")
+//    pt.findNode("get client", true)?.let {
+//        println("[pt] Found node ${it.key}")
+//    }
+
+//    pt.insertNode("get client data", 10.9)
 }
