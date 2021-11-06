@@ -13,7 +13,7 @@ class Node(
 ) {
 
     fun print(preamble: String = "") {
-        println("$preamble$key:")
+        println("$preamble<$key> (${data}):")
         children.forEach {
             it.print("$preamble  ")
         }
@@ -102,69 +102,6 @@ class SimpleCommandTree {
 }
 
 
-class PatriciaTree {
-
-    val rootNode = Node("^", 0.0, mutableListOf(), 0)
-
-    fun isMatchingKey(str: String, key: String) = key[0] == str[0]
-
-    private fun findLongestMatchingIndex(s1: String, s2: String): Int {
-        val comparison = { s: String -> { ix: Int, acc: Int, curr: Char -> if (curr == s[ix] && (acc == ix)) acc + 1 else acc } }
-        return when {
-            s1.length - s2.length > 0 -> s2.foldIndexed(0, comparison(s1))
-            s1.length - s2.length <= 0 -> s1.foldIndexed(0, comparison(s2))
-            else -> s1.foldIndexed(0, comparison(s2))
-        }
-    }
-
-    fun findNode(key: String, index: Int = 0, currNode: Node, relaxed: Boolean = false): Node? {
-        val subKey = key.substring(index).trimStart().trimEnd()
-        return if (isMatchingKey(subKey, currNode.key)) {
-            if (subKey.compareTo(currNode.key) == 0) { return currNode }
-            val matchingIndex = findLongestMatchingIndex(subKey, currNode.key)
-            when (matchingIndex) {
-                currNode.key.length -> currNode.children.firstNotNullOfOrNull { findNode(key, index + matchingIndex, it) } ?: currNode
-                subKey.length -> if (relaxed) currNode else null
-                else -> if (relaxed) currNode else null
-            }
-        } else {
-            null
-        }
-    }
-    fun findNode(key: String, relaxed: Boolean = false) = rootNode.children.firstNotNullOfOrNull { findNode(key, 0, it, relaxed) }
-
-    fun splitNode(node: Node, index: Int) = Node(
-        node.key.substring(0, index),
-        node.data,
-        mutableListOf(
-            Node(
-                node.key.substring(index, node.key.length),
-                node.data,
-                mutableListOf<Node>().also { it.addAll(node.children) },
-                node.index + index
-            )
-        ),
-        node.index
-    )
-    fun insertNode(key: String, data: Double) {
-        (findNode(key, true) ?: rootNode).let {
-            val subKey = key.substring(it.index)
-            val matchingIndex = findLongestMatchingIndex(it.key, subKey)
-            var splitted = if (matchingIndex != 0 && matchingIndex != it.key.length) splitNode(it, matchingIndex) else it
-            splitted.children.add(Node(
-                key.substring(matchingIndex),
-                data,
-                mutableListOf(),
-                it.index + matchingIndex
-            ))
-            if (matchingIndex != 0 && matchingIndex != it.key.length) {
-                it.children.clear()
-                it.children.addAll(splitted.children)
-                it.key = splitted.key
-            }
-        }
-    }
-}
 
 class App {
     val greeting: String
@@ -175,25 +112,18 @@ class App {
 
 fun main() {
     println(App().greeting)
-    val sp = SimpleCommandTree()
+//    val sp = SimpleCommandTree()
     val pt = PatriciaTree()
 
-//    sp.findNode("get client")?.let {
-//        it.forEach { println("Found node ${it.key}") }
-//    }
-
-
     pt.insertNode("get clients", 10.0)
-    pt.insertNode("get client data", 10.0)
-    pt.insertNode("get client address", 10.0)
-    pt.insertNode("get movies", 10.0)
-    pt.insertNode("set movie title", 10.0)
-    pt.insertNode("set movie length", 10.0)
-    pt.insertNode("help", 10.0)
+    pt.insertNode("get client data", 11.0)
+    pt.insertNode("get client address", 12.0)
+    pt.insertNode("get movies", 13.0)
+    pt.insertNode("set movie title", 14.0)
+    pt.insertNode("set movie length", 15.0)
+    pt.insertNode("help", 16.0)
     pt.rootNode.print("")
-//    pt.findNode("get client", true)?.let {
-//        println("[pt] Found node ${it.key}")
-//    }
-
-//    pt.insertNode("get client data", 10.9)
+        pt.findNode("set movie l", true)?.let {
+        println("[pt] Found node ${it.key}")
+    }
 }
