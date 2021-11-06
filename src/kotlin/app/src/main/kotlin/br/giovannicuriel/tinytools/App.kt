@@ -8,98 +8,98 @@ package br.giovannicuriel.tinytools
 class Node(
     var key: String,
     val data: Double,
-    val children: MutableList<Node>,
+    val children: MutableMap<Char, Node>,
     val index: Int = 0
 ) {
 
     fun print(preamble: String = "") {
         println("$preamble<$key> (${data}):")
         children.forEach {
-            it.print("$preamble  ")
+            it.value.print("$preamble  ${it.key}")
         }
     }
 }
 
-val getTree = Node(
-    "get",
-    1.0,
-    mutableListOf(
-        Node(
-            "clients",
-            2.0,
-            mutableListOf<Node>()
-        ),
-        Node(
-            "client",
-            2.0,
-            mutableListOf<Node>(
-                Node(
-                    "data",
-                    1.9,
-                    mutableListOf()
-                ),
-                Node(
-                    "rentals",
-                    1.9,
-                    mutableListOf()
-                )
-            )
-        ),
-        Node(
-            "movies",
-            3.0,
-            mutableListOf<Node>()
-        )
-    )
-)
-val helpTree = Node(
-    "help",
-    2.9,
-    mutableListOf()
-)
-
-class SimpleCommandTree {
-
-    val rootNode = Node("^", 0.0, mutableListOf(
-        getTree,
-        helpTree
-    ))
-
-    fun isMatchingKey(str: String, key: String) = key[0] == str[0]
-
-    private fun findLongestMatchingIndex(s1: String, s2: String): Int {
-        val comparison = { s: String -> { ix: Int, acc: Int, curr: Char -> if (curr == s[ix] && (acc == ix)) acc + 1 else acc } }
-        return s1.compareTo(s2).let {
-            when {
-                it > 0 -> s2.foldIndexed(0, comparison(s1))
-                it <= 0 -> s1.foldIndexed(0, comparison(s2))
-                else -> s1.foldIndexed(0, comparison(s2))
-            }
-        }
-    }
-
-    fun findNode(key: String, index: Int = 0, currNode: Node): List<Node> {
-        val subKey = key.substring(index).trimStart().trimEnd()
-        return if (isMatchingKey(subKey, currNode.key)) {
-            if (subKey.compareTo(currNode.key) == 0) { return listOf(currNode) }
-            val matchingIndex = findLongestMatchingIndex(subKey, currNode.key)
-            when (matchingIndex) {
-                currNode.key.length -> currNode.children.map {
-                        findNode(key, index + matchingIndex, it)
-                    }.fold(emptyList()) {
-                        acc, curr -> acc + curr
-                    }
-                subKey.length -> listOf(currNode)
-                else -> emptyList()
-            }
-        } else {
-            emptyList()
-        }
-    }
-
-    fun findNode(key: String) = rootNode.children.firstNotNullOfOrNull { findNode(key, 0, it) }
-
-}
+//val getTree = Node(
+//    "get",
+//    1.0,
+//    mutableListOf(
+//        Node(
+//            "clients",
+//            2.0,
+//            mutableListOf<Node>()
+//        ),
+//        Node(
+//            "client",
+//            2.0,
+//            mutableListOf<Node>(
+//                Node(
+//                    "data",
+//                    1.9,
+//                    mutableListOf()
+//                ),
+//                Node(
+//                    "rentals",
+//                    1.9,
+//                    mutableListOf()
+//                )
+//            )
+//        ),
+//        Node(
+//            "movies",
+//            3.0,
+//            mutableListOf<Node>()
+//        )
+//    )
+//)
+//val helpTree = Node(
+//    "help",
+//    2.9,
+//    mutableListOf()
+//)
+//
+//class SimpleCommandTree {
+//
+//    val rootNode = Node("^", 0.0, mutableListOf(
+//        getTree,
+//        helpTree
+//    ))
+//
+//    fun isMatchingKey(str: String, key: String) = key[0] == str[0]
+//
+//    private fun findLongestMatchingIndex(s1: String, s2: String): Int {
+//        val comparison = { s: String -> { ix: Int, acc: Int, curr: Char -> if (curr == s[ix] && (acc == ix)) acc + 1 else acc } }
+//        return s1.compareTo(s2).let {
+//            when {
+//                it > 0 -> s2.foldIndexed(0, comparison(s1))
+//                it <= 0 -> s1.foldIndexed(0, comparison(s2))
+//                else -> s1.foldIndexed(0, comparison(s2))
+//            }
+//        }
+//    }
+//
+//    fun findNode(key: String, index: Int = 0, currNode: Node): List<Node> {
+//        val subKey = key.substring(index).trimStart().trimEnd()
+//        return if (isMatchingKey(subKey, currNode.key)) {
+//            if (subKey.compareTo(currNode.key) == 0) { return listOf(currNode) }
+//            val matchingIndex = findLongestMatchingIndex(subKey, currNode.key)
+//            when (matchingIndex) {
+//                currNode.key.length -> currNode.children.map {
+//                        findNode(key, index + matchingIndex, it)
+//                    }.fold(emptyList()) {
+//                        acc, curr -> acc + curr
+//                    }
+//                subKey.length -> listOf(currNode)
+//                else -> emptyList()
+//            }
+//        } else {
+//            emptyList()
+//        }
+//    }
+//
+//    fun findNode(key: String) = rootNode.children.firstNotNullOfOrNull { findNode(key, 0, it) }
+//
+//}
 
 
 
