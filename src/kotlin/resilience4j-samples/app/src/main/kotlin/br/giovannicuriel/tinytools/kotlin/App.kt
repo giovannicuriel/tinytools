@@ -4,15 +4,51 @@
 package br.giovannicuriel.tinytools.kotlin
 
 
+import io.github.resilience4j.retry.Retry
+import io.github.resilience4j.retry.RetryConfig
+import io.github.resilience4j.retry.RetryRegistry
+import java.time.Duration
+import java.util.function.Supplier
 
 
 class App {
-    val greeting: String
-        get() {
-            return "Hello World!"
+    var counter = 0;
+
+   fun createRetryConfig() = RetryConfig.custom<Any>()
+        .maxAttempts(3)
+        .waitDuration(Duration.ofMillis(100))
+        .retryExceptions(NullPointerException::class.java)
+        .retryOnResult { response -> checkResult(response as String) }
+        .build()
+
+    fun get(): String {
+        val config = createRetryConfig()
+        val registry = RetryRegistry.of(config)
+        val retry: Retry = registry.retry("get-data-retry")
+        val decorateFunction: Supplier<String> = Retry.decorateSupplier(retry) {
+            getData()
         }
+
+        return decorateFunction.get()
+    }
+
+    private fun getData(): String {
+        counter++
+        return when (counter) {
+            1 -> throw java.lang.NullPointerException("really!!!")
+            2 -> "error response"
+            else -> { // Note the block
+                return "winner"
+            }
+        }
+
+    }
+    private fun checkResult(response: String): Boolean {
+        return response == "error response"
+    }
 }
 
 fun main() {
-    println(App().greeting)
+    val app = App()
+    println(app.get())
 }
