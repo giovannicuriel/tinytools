@@ -7,70 +7,78 @@
 #include <typeindex>
 #include <unordered_map>
 
-struct GenericDataChannel {
-};
-
-template<int N>
-struct TemplateCounter {
-    static const int index = N;
-    static const int next = N + 1;
-};
-
-template<>
-struct TemplateCounter<0> {
-    static const int index = 1;
-    static const int next = 1;
-};
-
-template<typename T>
-struct DataChannel: public GenericDataChannel {
-    typedef T DataType;
-    static constexpr const int index = std::type_index(typeid(T));
+template <typename T>
+struct DataChannel
+{
+    static DataChannel<T> *instance;
+    static DataChannel<T> *getInstance();
     std::queue<T> queue;
-
-    void send(const T& data) {
+    void send(T data) {
         queue.push(data);
     }
-
-    void receive(T& data) {
-        data = queue.top();
+    T receive() {
+        auto data = queue.front();
         queue.pop();
+        return data;
     }
 };
+template <typename T>
+DataChannel<T> *DataChannel<T>::instance;
 
-struct DataBroker {
-    std::unordered_map<std::type_index, GenericDataChannel *> channels;
-    template<typename T>
-    auto getDataChannel() {
-        int index = DataChannel<T>::index;
-        if (channels.find(index) == channels.end()) {
-            channels[index] = new DataChannel<T>();
-        }
-        return channels[index];
+template <typename T>
+DataChannel<T> *DataChannel<T>::getInstance()
+{
+    if (DataChannel<T>::instance == nullptr)
+    {
+        DataChannel<T>::instance = new DataChannel<T>();
     }
-};
+    return DataChannel<T>::instance;
+}
 
-DataBroker databroker;
-
-template<typename T>
-struct Subscriber {
-    virtual void receive(const T& data) {
-        auto dataChannel = dataBroker.getDataChannel<T>();
-        dataChannel.receive(data);
+template <typename T>
+struct Subscriber
+{
+    T receive()
+    {
+        auto dataChannel = DataChannel<T>::getInstance();
+        return dataChannel->receive();
     };
 };
 
-template<typename T>
-struct Publisher {
-    virtual void notify(const T& data) {
-        auto dataChannel = dataBroker.getDataChannel<T>();
-        dataChannel.send(data);
+template <typename T>
+struct Publisher
+{
+    void notify(T data)
+    {
+        auto dataChannel = DataChannel<T>::getInstance();
+        dataChannel->send(data);
     }
 };
 
+struct MouseEvent
+{
+    int x;
+    int y;
+};
+struct GameEvent
+{
+    std::string event;
+};
 
+std::ostream &operator<<(std::ostream &out, const MouseEvent &ev)
+{
+    out << "(" << ev.x << ", " << ev.y << ")";
+    return out;
+}
 
-int main(void) {
+int main(void)
+{
     std::cout << "Oi\n";
+    auto s = Subscriber<MouseEvent>();
+    auto p = Publisher<MouseEvent>();
+    auto ev1 = MouseEvent({x : 10, y : 11});
+    p.notify(ev1);
+    auto ev = s.receive();
+    std::cout << ev << "\n";
     return 0;
 }

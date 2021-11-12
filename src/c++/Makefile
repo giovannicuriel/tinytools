@@ -1,4 +1,4 @@
-all: test-1.app test-2.app
+all: test-1.app test-2.app test-3.app
 test-%.app: test-%.o
 	$(CXX) $^ -o $@
 clean:

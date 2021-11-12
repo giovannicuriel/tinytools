@@ -153,6 +153,23 @@ public:
     friend std::ostream &operator<<(std::ostream & out, const Message& message);
 };
 
+class EventProcessor {
+    template<typename T>
+    void processEvent(const T& eventData) {
+        std::cout << "No type defined. Doing nothing.\n";
+    }
+};
+
+template<>
+void EventProcessor::processEvent(const MouseEvent& eventData) {
+    std::cout << "Processing a mouse event: " << eventData << ".\n";
+}
+
+template<>
+void EventProcessor::processEvent(const GameEvent& eventData) {
+    std::cout << "Processing a game event: " << eventData << ".\n";
+}
+
 class MessageComparator {
 protected:
     bool m_IsReverse;
