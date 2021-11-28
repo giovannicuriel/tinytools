@@ -20,7 +20,7 @@ public:
 };
 
 ////////////////////////////////////////////////////////////////////////////////
-template<typename KeySpec = StringKeySpec>
+template<typename KeySpec>
 class Key {
 protected:
     KeySpec::KeyType m_Key;
@@ -66,7 +66,7 @@ std::pair<Key<KeySpec>, Key<KeySpec>> Key<KeySpec>::sliceAt(Index index) const {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-template<typename DataType, typename KeyType>
+template<typename DataType, typename KeySpec, typename KeyType = class Key<KeySpec>>
 class Node {
 protected:
     KeyType m_Key;
@@ -76,72 +76,72 @@ protected:
 
     KeyType sliceKeyAt(Index index);
 public:
-    typedef KeyType Key;
-    typedef DataType Data;
+    typedef KeyType keyType;
+    typedef DataType dataType;
 
-    Node(KeyType key, Data data, Index index);
+    Node(KeyType key, DataType data, Index index);
     Node* getChildAt(typename KeyType::KeyBit c) const;
     void addChild(typename KeyType::KeyBit b, Node* child);
     KeyType getKey() const;
     inline Index getIndex() const { return m_Index; }
     void splitNode(Index newIndex);
-    void splitNode(Index newIndex, Data data);
+    void splitNode(Index newIndex, DataType data);
 
     std::string toString() const;
     std::string toString(std::string preamble) const;
 
-    template<typename A, typename K>
-    friend std::ostream& operator<<(std::ostream& out, const Node<A, K>& obj);
+    template<typename A, typename KS, typename KT>
+    friend std::ostream& operator<<(std::ostream& out, const Node<A, KS, KT>& obj);
 };
 
-template<typename DataType, typename KeyType>
-Node<DataType, KeyType>::Node(Key key, DataType data, Index index) :
+template<typename DataType, typename KeySpec, typename KeyType>
+Node<DataType, KeySpec, KeyType>::Node(KeyType key, DataType data, Index index) :
     m_Key(key),
     m_Data(data),
     m_Index(index) {
 }
 
-template<typename DataType, typename KeyType>
-Node<DataType, KeyType>* Node<DataType, KeyType>::getChildAt(typename KeyType::KeyBit bit) const {
+template<typename DataType, typename KeySpec, typename KeyType>
+Node<DataType, KeySpec, KeyType>* Node<DataType, KeySpec, KeyType>::getChildAt(typename KeyType::KeyBit bit) const {
     return (m_Children.contains(bit) ? m_Children.at(bit) : nullptr );
 }
 
-template<typename DataType, typename KeyType>
-void Node<DataType, KeyType>::addChild(typename KeyType::KeyBit bit, Node<DataType, KeyType>* child) {
+template<typename DataType, typename KeySpec, typename KeyType>
+void Node<DataType, KeySpec, KeyType>::addChild(typename KeyType::KeyBit bit, Node<DataType, KeySpec, KeyType>* child) {
     m_Children[bit] = child;
 }
 
-template<typename DataType, typename KeyType>
-KeyType Node<DataType, KeyType>::getKey() const {
+template<typename DataType, typename KeySpec, typename KeyType>
+KeyType Node<DataType, KeySpec, KeyType>::getKey() const {
     return Key(m_Key);
 }
 
-template<typename DataType, typename KeyType>
-KeyType Node<DataType, KeyType>::sliceKeyAt(Index index) {
+template<typename DataType, typename KeySpec, typename KeyType>
+KeyType Node<DataType, KeySpec, KeyType>::sliceKeyAt(Index index) {
     auto [k1, k2] = m_Key.sliceAt(index);
     m_Key = k1;
     return k2;
 }
 
-template<typename DataType, typename KeyType>
-void Node<DataType, KeyType>::splitNode(Index newIndex) {
+template<typename DataType, typename KeySpec, typename KeyType>
+void Node<DataType, KeySpec, KeyType>::splitNode(Index newIndex) {
     KeyType newKey = sliceKeyAt(newIndex);
-    auto newNode = new Node<DataType, KeyType>(newKey, m_Data, m_Index + newIndex);
+    auto newNode = new Node<DataType, KeySpec, KeyType>(newKey, m_Data, m_Index + newIndex);
     newNode->m_Children = m_Children;
     m_Children.clear();
     m_Data = DataType();
     m_Children[newKey.firstBit()] = newNode;
 }
 
-template<typename DataType, typename KeyType>
-void Node<DataType, KeyType>::splitNode(Index newIndex, DataType data) {
+template<typename DataType, typename KeySpec, typename KeyType>
+void Node<DataType, KeySpec, KeyType>::splitNode(Index newIndex, DataType data) {
     splitNode(newIndex);
     m_Data = data;
 }
 
 
-template<typename DataType, typename KeyType>
-std::string Node<DataType, KeyType>::toString(std::string preamble) const {
+template<typename DataType, typename KeySpec, typename KeyType>
+std::string Node<DataType, KeySpec, KeyType>::toString(std::string preamble) const {
     std::stringstream ss;
     ss << preamble << m_Key;
     ss << " (" << m_Data << ")\n";
@@ -151,15 +151,15 @@ std::string Node<DataType, KeyType>::toString(std::string preamble) const {
     return ss.str();
 }
 
-template<typename DataType, typename KeyType>
-std::ostream& operator<<(std::ostream& out, const Node<DataType, KeyType>& obj) {
+template<typename DataType, typename KeySpec, typename KeyType>
+std::ostream& operator<<(std::ostream& out, const Node<DataType, KeySpec, KeyType>& obj) {
     out << obj.toString("");
     return out;
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
-template<typename Node, typename DataType = Node::Data, typename Key = Node::Key>
+template<typename Node, typename DataType = Node::dataType, typename Key = Node::keyType>
 class PatriciaTree {
 protected:
     Node* findNode(Node* currNode, Key key, bool relaxed) const;
@@ -231,25 +231,26 @@ void PatriciaTree<Node, Data, Key>::insertNode(
 ) {
     auto currNode = findNode(key, true);
     auto insertionNode = currNode == nullptr ? &m_Root : currNode;
-
+    auto insertionIndex = insertionNode->getIndex();
+    auto insertionKey = insertionNode->getKey();
     Key newKey(key);
-    auto [prefixKey, remainderKey] = newKey.sliceAt(insertionNode->getIndex());
-    auto matchingIndex = insertionNode->getKey().findFirstDifferenceIndex(remainderKey);
-    if ((insertionNode->getIndex() + matchingIndex == newKey.length()) &&
-        (newKey.length() == insertionNode->getKey().length())
+    auto [prefixKey, remainderKey] = newKey.sliceAt(insertionIndex);
+    auto matchingIndex = insertionKey.findFirstDifferenceIndex(remainderKey);
+    if ((insertionIndex + matchingIndex == newKey.length()) &&
+        (newKey.length() == insertionKey.length())
     ) {
         // Key already exists
         return;
-    } else if (insertionNode->getIndex() + matchingIndex == newKey.length()) {
+    } else if (insertionIndex + matchingIndex == newKey.length()) {
         insertionNode->splitNode(matchingIndex, data);
         return;
     }
 
-    Index newIndex = insertionNode->getIndex() + matchingIndex;
+    Index newIndex = insertionIndex + matchingIndex;
     auto [newPrefixKey, newRemainder] = remainderKey.sliceAt(matchingIndex);
     Node * newNode = new Node(newRemainder, data, newIndex);
 
-    if (matchingIndex > 0 && matchingIndex != insertionNode->getKey().length()) {
+    if (matchingIndex > 0 && matchingIndex != insertionKey.length()) {
         insertionNode->splitNode(matchingIndex);
     }
     insertionNode->addChild(newRemainder.firstBit(), newNode);
@@ -263,7 +264,7 @@ std::ostream& operator<<(std::ostream& out, const PatriciaTree<Node, Data, Key>&
 
 int main(void) {
     std::cout << "Add new command!\n";
-    PatriciaTree<Node<std::string, Key<StringKeySpec>>> pt;
+    PatriciaTree<Node<std::string, StringKeySpec>> pt;
 
     std::string command = "command";
     std::string key;
