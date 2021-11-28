@@ -7,27 +7,44 @@
 
 typedef size_t Index;
 
+class StringKeySpec {
+public:
+    typedef std::string KeyType;
+    typedef char KeyBit;
+
+    static KeyType slice(const KeyType& data, Index ix) { return data.substr(ix); }
+    static KeyType slice(const KeyType& data, Index start, Index end) { return data.substr(start, end); }
+    static size_t length(const KeyType& data) { return data.length(); }
+    static KeyBit first(const KeyType& data) { return data[0]; }
+};
+
 ////////////////////////////////////////////////////////////////////////////////
+template<typename KeySpec = StringKeySpec>
 class Key {
 protected:
-    std::string m_Key;
+    KeySpec::KeyType m_Key;
 public:
     Key(std::string key);
     Index findFirstDifferenceIndex(const Key& k) const;
     std::pair<Key, Key> sliceAt(Index index) const;
-    inline size_t length() const { return m_Key.length(); }
-    inline char firstChar() const { return m_Key[0]; };
-    friend std::ostream& operator<<(std::ostream& out, const Key& obj);
+    inline size_t length() const { return KeySpec::length(m_Key); }
+    inline KeySpec::KeyBit firstBit() const { return KeySpec::first(m_Key); };
+
+    template<typename T>
+    friend std::ostream& operator<<(std::ostream& out, const Key<T>& obj);
 };
 
-Key::Key(std::string key): m_Key(key) {}
+template<typename KeySpec>
+Key<KeySpec>::Key(std::string key): m_Key(key) {}
 
-std::ostream& operator<<(std::ostream& out, const Key& obj) {
+template<typename KeySpec>
+std::ostream& operator<<(std::ostream& out, const Key<KeySpec>& obj) {
     out << obj.m_Key;
     return out;
 }
 
-Index Key::findFirstDifferenceIndex(const Key& other) const {
+template<typename KeySpec>
+Index Key<KeySpec>::findFirstDifferenceIndex(const Key<KeySpec>& other) const {
     size_t max = this->m_Key.length() < other.m_Key.length() ? this->m_Key.length() : other.m_Key.length();
     Index s = 0;
     for (; s < max; s++) {
@@ -38,28 +55,29 @@ Index Key::findFirstDifferenceIndex(const Key& other) const {
     return s;
 }
 
-std::pair<Key, Key> Key::sliceAt(Index index) const {
+template<typename KeySpec>
+std::pair<Key<KeySpec>, Key<KeySpec>> Key<KeySpec>::sliceAt(Index index) const {
     return std::pair(
-        Key(m_Key.substr(0, index)),
-        Key(m_Key.substr(index))
+        Key(KeySpec::slice(m_Key, 0, index)),
+        Key(KeySpec::slice(m_Key, index))
     );
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-template<typename T>
+template<typename T, typename KeySpec = StringKeySpec>
 class Node {
 protected:
-    Key m_Key;
+    Key<KeySpec> m_Key;
     T * m_Data;
     std::map<char, Node*> m_Children;
     const Index m_Index;
 
-    Key sliceKeyAt(Index index);
+    Key<KeySpec> sliceKeyAt(Index index);
 public:
-    Node(Key key, T * data, Index index);
-    Node* getChildAt(char) const;
-    void addChild(char c, Node<T> * child);
-    Key getKey() const;
+    Node(Key<KeySpec> key, T * data, Index index);
+    Node<T, KeySpec>* getChildAt(typename KeySpec::KeyBit c) const;
+    void addChild(typename KeySpec::KeyBit c, Node<T, KeySpec>* child);
+    Key<KeySpec> getKey() const;
     inline Index getIndex() const { return m_Index; }
     void splitNode(Index newIndex);
     void splitNode(Index newIndex, T* data);
@@ -67,58 +85,58 @@ public:
     std::string toString() const;
     std::string toString(std::string preamble) const;
 
-    template<typename A>
-    friend std::ostream& operator<<(std::ostream& out, const Node<A>& obj);
+    template<typename A, typename KS>
+    friend std::ostream& operator<<(std::ostream& out, const Node<A, KS>& obj);
 };
 
-template<typename T>
-Node<T>::Node(Key key, T * data, Index index) :
+template<typename T, typename KeySpec>
+Node<T, KeySpec>::Node(Key<KeySpec> key, T * data, Index index) :
     m_Key(key),
     m_Data(data),
     m_Index(index) {
 }
 
-template<typename T>
-Node<T>* Node<T>::getChildAt(char bit) const {
+template<typename T, typename KeySpec>
+Node<T, KeySpec>* Node<T, KeySpec>::getChildAt(typename KeySpec::KeyBit bit) const {
     return (m_Children.contains(bit) ? m_Children.at(bit) : nullptr );
 }
 
-template<typename T>
-void Node<T>::addChild(char bit, Node<T> * child) {
+template<typename T, typename KeySpec>
+void Node<T, KeySpec>::addChild(typename KeySpec::KeyBit bit, Node<T, KeySpec>* child) {
     m_Children[bit] = child;
 }
 
-template<typename T>
-Key Node<T>::getKey() const {
+template<typename T, typename KeySpec>
+Key<KeySpec> Node<T, KeySpec>::getKey() const {
     return Key(m_Key);
 }
 
-template<typename T>
-Key Node<T>::sliceKeyAt(Index index) {
+template<typename T, typename KeySpec>
+Key<KeySpec> Node<T, KeySpec>::sliceKeyAt(Index index) {
     auto [k1, k2] = m_Key.sliceAt(index);
     m_Key = k1;
     return k2;
 }
 
-template<typename T>
-void Node<T>::splitNode(Index newIndex) {
-    Key newKey = sliceKeyAt(newIndex);
+template<typename T, typename KeySpec>
+void Node<T, KeySpec>::splitNode(Index newIndex) {
+    Key<KeySpec> newKey = sliceKeyAt(newIndex);
     auto newNode = new Node<T>(newKey, m_Data, m_Index + newIndex);
     newNode->m_Children = m_Children;
     m_Children.clear();
     m_Data = nullptr;
-    m_Children[newKey.firstChar()] = newNode;
+    m_Children[newKey.firstBit()] = newNode;
 }
 
-template<typename T>
-void Node<T>::splitNode(Index newIndex, T* data) {
+template<typename T, typename KeySpec>
+void Node<T, KeySpec>::splitNode(Index newIndex, T* data) {
     splitNode(newIndex);
     m_Data = data;
 }
 
 
-template<typename T>
-std::string Node<T>::toString(std::string preamble) const {
+template<typename T, typename KeySpec>
+std::string Node<T, KeySpec>::toString(std::string preamble) const {
     std::stringstream ss;
     ss << preamble << m_Key;
     if (m_Data != nullptr) {
@@ -133,8 +151,8 @@ std::string Node<T>::toString(std::string preamble) const {
     return ss.str();
 }
 
-template<typename T>
-std::ostream& operator<<(std::ostream& out, const Node<T>& obj) {
+template<typename T, typename KeySpec>
+std::ostream& operator<<(std::ostream& out, const Node<T, KeySpec>& obj) {
     out << obj.toString("");
     return out;
 }
@@ -235,7 +253,7 @@ void PatriciaTree<T>::insertNode(
     if (matchingIndex > 0 && matchingIndex != insertionNode->getKey().length()) {
         insertionNode->splitNode(matchingIndex);
     }
-    insertionNode->addChild(newRemainder.firstChar(), newNode);
+    insertionNode->addChild(newRemainder.firstBit(), newNode);
 }
 
 template<typename T>
