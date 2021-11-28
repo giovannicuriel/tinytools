@@ -1,7 +1,7 @@
 all: test-1.app test-2.app test-3.app
-test-%.app: test-%.o
+%.app: %.o
 	$(CXX) $^ -o $@
 clean:
 	rm -fr *.app *.o
 %.o: %.cpp
-	${CXX} -O0 -g3 -Wall -c $< -o $@
+	${CXX} -std=c++20 -O0 -g3 -Wall -c $< -o $@
