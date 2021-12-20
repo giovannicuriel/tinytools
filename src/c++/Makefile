@@ -1,4 +1,9 @@
-all: test-1.app test-2.app test-3.app
+all: \
+	patricia-tree-demo.app \
+	test-1.app \
+	test-2.app \
+	test-3.app \
+	minesweep.app
 %.app: %.o
 	$(CXX) $^ -o $@
 clean:

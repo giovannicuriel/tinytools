@@ -1,3 +1,6 @@
+#ifndef _PATRICIA_TREE_HPP__
+#define _PATRICIA_TREE_HPP__
+
 #include <iostream>
 #include <string>
 #include <map>
@@ -19,7 +22,6 @@ public:
     static KeyType getDefaultKey() { return "^"; }
 };
 
-////////////////////////////////////////////////////////////////////////////////
 template<typename KeySpec>
 class Key {
 protected:
@@ -65,7 +67,6 @@ std::pair<Key<KeySpec>, Key<KeySpec>> Key<KeySpec>::sliceAt(Index index) const {
     );
 }
 
-////////////////////////////////////////////////////////////////////////////////
 template<typename DataType, typename KeySpec, typename KeyType = class Key<KeySpec>>
 class Node {
 protected:
@@ -83,6 +84,7 @@ public:
     Node* getChildAt(typename KeyType::KeyBit c) const;
     void addChild(typename KeyType::KeyBit b, Node* child);
     KeyType getKey() const;
+    DataType getData() const;
     inline Index getIndex() const { return m_Index; }
     void splitNode(Index newIndex);
     void splitNode(Index newIndex, DataType data);
@@ -114,6 +116,11 @@ void Node<DataType, KeySpec, KeyType>::addChild(typename KeyType::KeyBit bit, No
 template<typename DataType, typename KeySpec, typename KeyType>
 KeyType Node<DataType, KeySpec, KeyType>::getKey() const {
     return Key(m_Key);
+}
+
+template<typename DataType, typename KeySpec, typename KeyType>
+DataType Node<DataType, KeySpec, KeyType>::getData() const {
+    return m_Data;
 }
 
 template<typename DataType, typename KeySpec, typename KeyType>
@@ -262,18 +269,4 @@ std::ostream& operator<<(std::ostream& out, const PatriciaTree<Node, Data, Key>&
     return out;
 }
 
-int main(void) {
-    std::cout << "Add new command!\n";
-    PatriciaTree<Node<std::string, StringKeySpec>> pt;
-
-    std::string command = "command";
-    std::string key;
-
-    while(command != "exit") {
-        getline(std::cin, key);
-        pt.insertNode(key, command);
-        std::cout << pt << "\n";
-    }
-    return 0;
-}
-
+#endif // _PATRICIA_TREE_HPP__
