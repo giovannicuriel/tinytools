@@ -110,7 +110,7 @@ class App {
         }
 }
 
-fun main() {
+fun mainPatriciaTree() {
     println(App().greeting)
 //    val sp = SimpleCommandTree()
     val pt = PatriciaTree()
@@ -131,4 +131,12 @@ fun main() {
         pt.findNode("set movie li", true)?.let {
         println("[pt] Found node ${it.key}")
     }
+}
+
+fun mainSocket() {
+    socketSample()
+}
+
+fun main() {
+    mainSocket()
 }

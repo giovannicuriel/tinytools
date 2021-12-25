@@ -67,7 +67,8 @@ std::pair<Key<KeySpec>, Key<KeySpec>> Key<KeySpec>::sliceAt(Index index) const {
     );
 }
 
-template<typename DataType, typename KeySpec, typename KeyType = class Key<KeySpec>>
+////////////////////////////////////////////////////////////////////////////////
+template<typename DataType, typename KeySpec = StringKeySpec, typename KeyType = class Key<KeySpec>>
 class Node {
 protected:
     KeyType m_Key;
