@@ -3,6 +3,7 @@ all: \
 	test-1.app \
 	test-2.app \
 	test-3.app \
+	test-4.app \
 	minesweep.app
 %.app: %.o
 	$(CXX) $^ -o $@
